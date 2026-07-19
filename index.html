@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#116149">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Despeses de viatge</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17342d;background:#f2f6f4;--green:#116149;--soft:#e6f0ec;--line:#d7e2de;--danger:#a4382f}*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 12px calc(92px + env(safe-area-inset-bottom));max-width:820px;margin:auto}header{position:sticky;top:0;z-index:5;background:#f2f6f4ee;backdrop-filter:blur(12px);padding:12px 0 8px}.topline{display:flex;align-items:center;justify-content:space-between;gap:10px}h1{font-size:23px;margin:0}.sub{font-size:12px;color:#61746e;margin-top:3px}.card{background:#fff;border-radius:17px;padding:14px;margin:10px 0;box-shadow:0 2px 12px #0c3f3010}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#e7efec;padding:5px;border-radius:14px}.tab{border:0;background:transparent;padding:10px 4px;border-radius:10px;font-weight:700;color:#536963}.tab.active{background:#fff;color:var(--green);box-shadow:0 1px 5px #00000012}.page{display:none}.page.active{display:block}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:var(--soft);border-radius:13px;padding:12px}.metric span{font-size:12px;color:#657872}.metric b{display:block;font-size:21px;margin-top:3px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:750;color:#536963;margin-bottom:4px}input,select,textarea{width:100%;font-size:16px;border:1px solid #cad9d4;border-radius:11px;padding:11px;background:#fff}textarea{min-height:64px}.btn{border:0;border-radius:12px;padding:12px;font-size:15px;font-weight:750}.primary{background:var(--green);color:#fff}.secondary{background:var(--soft);color:var(--green)}.danger{background:#fce9e7;color:var(--danger)}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.participants{display:grid;grid-template-columns:1fr 1fr;gap:8px}.check{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:11px;padding:9px}.check input{width:auto}.expense{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px 0;border-bottom:1px solid #edf2f0}.expense:last-child{border:0}.amount{text-align:right;font-weight:800}.meta{font-size:12px;color:#6a7d78;margin-top:3px}.pill{display:inline-block;background:#edf4f1;border-radius:999px;padding:3px 7px;margin:4px 3px 0 0;font-size:11px}.balance{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #edf2f0}.positive{color:#147a55}.negative{color:#b04136}.empty{text-align:center;color:#71847f;padding:22px}.toolbar{position:fixed;left:0;right:0;bottom:0;background:#ffffffef;backdrop-filter:blur(12px);padding:9px 12px calc(9px + env(safe-area-inset-bottom));border-top:1px solid var(--line);z-index:10}.toolbarInner{max-width:820px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}.small{font-size:12px;color:#647770}.hidden{display:none}.settlement{padding:9px 0;border-bottom:1px solid #edf2f0}.install{font-size:12px;background:#fff5d9;border:1px solid #eed58d;padding:9px;border-radius:11px;margin-top:7px}@media(max-width:480px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<header>
+<div class="topline"><div><h1 id="tripTitle">Despeses Islàndia 2026</h1><div class="sub">Guardat al dispositiu · importació i exportació Excel</div></div></div>
+<div id="installNote" class="install">Per instal·lar-la: Safari → Compartir → Afegir a la pantalla d’inici.</div>
+</header>
+<div class="tabs"><button class="tab active" data-page="expensesPage">Despeses</button><button class="tab" data-page="summaryPage">Resum</button><button class="tab" data-page="settingsPage">Configuració</button></div>
+
+<section id="expensesPage" class="page active">
+<div class="card metrics"><div class="metric"><span>Total</span><b id="total">0,00 €</b></div><div class="metric"><span>Despesa mitjana</span><b id="average">0,00 €</b></div></div>
+<div class="card"><form id="form" class="grid">
+<div><label>Data</label><input id="date" type="date" required></div><div><label>Import (€)</label><input id="amount" type="number" step="0.01" min="0" inputmode="decimal" required></div>
+<div class="full"><label>Concepte</label><input id="concept" required placeholder="Restaurant, gasolina, hotel…"></div>
+<div><label>Categoria</label><select id="category"></select></div><div><label>Pagat per</label><select id="paidBy"></select></div>
+<div><label>Forma de pagament</label><select id="payment"></select></div><div><label>Moment</label><select id="moment"></select></div>
+<div class="full"><label>Repartir entre</label><div id="participantChecks" class="participants"></div></div>
+<div class="full"><label>Ciutat / lloc</label><input id="place"></div><div class="full"><label>Observacions</label><textarea id="notes"></textarea></div>
+<div class="full"><button class="btn primary" type="submit" style="width:100%">Afegir despesa</button></div>
+</form></div>
+<div class="card"><div class="actions"><button class="btn secondary" id="importBtn">Importar Excel</button><button class="btn secondary" id="exportBtn">Exportar Excel</button></div><input class="hidden" id="fileInput" type="file" accept=".xlsx,.xls"><div class="small" style="margin-top:8px">L’Excel exportat es pot obrir amb Microsoft Excel o Apple Numbers.</div></div>
+<div class="card"><b>Despeses registrades</b><div id="list"></div></div>
+</section>
+
+<section id="summaryPage" class="page">
+<div class="card"><b>Saldo de cada persona</b><div class="small">Positiu: ha avançat diners. Negatiu: deu diners.</div><div id="balances"></div></div>
+<div class="card"><b>Proposta de liquidació</b><div id="settlements"></div></div>
+<div class="card"><b>Despeses per categoria</b><div id="categorySummary"></div></div>
+</section>
+
+<section id="settingsPage" class="page">
+<div class="card grid"><div class="full"><label>Nom del viatge</label><input id="tripName"></div><div class="full"><label>Participants, un per línia</label><textarea id="participantNames"></textarea></div><div class="full"><button class="btn primary" id="saveSettings" style="width:100%">Desar configuració</button></div></div>
+<div class="card"><div class="actions"><button class="btn secondary" id="backupBtn">Exportar còpia</button><button class="btn danger" id="clearBtn">Esborrar dades</button></div></div>
+</section>
+
+<div class="toolbar"><div class="toolbarInner"><button class="btn secondary" id="goSummary">Veure saldos</button><button class="btn primary" id="focusNew">Nova despesa</button></div></div>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+const STORE='despeses_viatge_v2';
+const defaults={trip:'Despeses Islàndia 2026',participants:['Victor','Persona 2','Persona 3','Persona 4'],expenses:[]};
+let state=(()=>{try{return {...defaults,...JSON.parse(localStorage.getItem(STORE)||'{}')}}catch{return structuredClone(defaults)}})();
+const categories=['Allotjament','Menjar i restaurants','Supermercat','Combustible','Transport','Aparcament','Ferris i peatges','Activitats i oci','Compres','Assegurança','Altres'];
+const payments=['Targeta','Efectiu','Transferència','Altres'];
+const moments=['Abans del viatge','Durant el viatge','Després del viatge'];
+const $=id=>document.getElementById(id); const euro=n=>new Intl.NumberFormat('ca-ES',{style:'currency',currency:'EUR'}).format(Number(n)||0);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+function save(){localStorage.setItem(STORE,JSON.stringify(state));render()}
+function options(el,arr){el.innerHTML=arr.map(x=>`<option>${esc(x)}</option>`).join('')}
+function buildForm(){options($('category'),categories);options($('payment'),payments);options($('moment'),moments);options($('paidBy'),state.participants);$('participantChecks').innerHTML=state.participants.map((p,i)=>`<label class="check"><input type="checkbox" data-person="${esc(p)}" checked><span>${esc(p)}</span></label>`).join('')}
+function render(){
+ $('tripTitle').textContent=state.trip;$('tripName').value=state.trip;$('participantNames').value=state.participants.join('\n');buildForm();
+ const total=state.expenses.reduce((s,x)=>s+Number(x.amount||0),0);$('total').textContent=euro(total);$('average').textContent=euro(state.expenses.length?total/state.expenses.length:0);
+ $('list').innerHTML=state.expenses.length?state.expenses.slice().reverse().map((x,ri)=>{const i=state.expenses.length-1-ri;return `<div class="expense"><div><b>${esc(x.concept)}</b><div class="meta">${esc(x.date)} · ${esc(x.category)} · pagat per ${esc(x.paidBy||'—')}</div><div>${(x.sharedBy||[]).map(p=>`<span class="pill">${esc(p)}</span>`).join('')}</div></div><div><div class="amount">${euro(x.amount)}</div><button class="btn danger" style="padding:5px 8px;font-size:11px;margin-top:5px" onclick="removeExpense(${i})">Eliminar</button></div></div>`}).join(''):'<div class="empty">Encara no hi ha despeses.</div>';
+ renderSummary();
+}
+function balances(){const b=Object.fromEntries(state.participants.map(p=>[p,0]));for(const x of state.expenses){const shared=(x.sharedBy&&x.sharedBy.length?x.sharedBy:state.participants).filter(p=>p in b);const share=Number(x.amount||0)/Math.max(1,shared.length);if(x.paidBy in b)b[x.paidBy]+=Number(x.amount||0);shared.forEach(p=>b[p]-=share)}return b}
+function renderSummary(){const b=balances();$('balances').innerHTML=Object.entries(b).map(([p,v])=>`<div class="balance"><span>${esc(p)}</span><b class="${v>=0?'positive':'negative'}">${euro(v)}</b></div>`).join('');const debtors=Object.entries(b).filter(([,v])=>v<-.005).map(([p,v])=>[p,-v]);const creditors=Object.entries(b).filter(([,v])=>v>.005).map(([p,v])=>[p,v]);let s=[];let di=0,ci=0;while(di<debtors.length&&ci<creditors.length){const amt=Math.min(debtors[di][1],creditors[ci][1]);s.push([debtors[di][0],creditors[ci][0],amt]);debtors[di][1]-=amt;creditors[ci][1]-=amt;if(debtors[di][1]<.005)di++;if(creditors[ci][1]<.005)ci++}$('settlements').innerHTML=s.length?s.map(x=>`<div class="settlement"><b>${esc(x[0])}</b> paga <b>${euro(x[2])}</b> a <b>${esc(x[1])}</b></div>`).join(''):'<div class="empty">Els saldos estan equilibrats.</div>';const cats={};state.expenses.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount||0));$('categorySummary').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="balance"><span>${esc(k)}</span><b>${euro(v)}</b></div>`).join('')||'<div class="empty">Sense dades.</div>'}
+window.removeExpense=i=>{if(confirm('Vols eliminar aquesta despesa?')){state.expenses.splice(i,1);save()}};
+$('date').value=new Date().toISOString().slice(0,10);
+$('form').addEventListener('submit',e=>{e.preventDefault();const sharedBy=[...document.querySelectorAll('[data-person]:checked')].map(x=>x.dataset.person);if(!sharedBy.length){alert('Selecciona almenys una persona.');return}state.expenses.push({date:$('date').value,concept:$('concept').value.trim(),category:$('category').value,amount:Number($('amount').value),paidBy:$('paidBy').value,payment:$('payment').value,moment:$('moment').value,sharedBy,place:$('place').value.trim(),notes:$('notes').value.trim()});save();e.target.reset();$('date').value=new Date().toISOString().slice(0,10);buildForm();$('concept').focus()});
+function exportExcel(){if(typeof XLSX==='undefined'){alert('Obre l’app una vegada amb connexió per activar Excel.');return}const rows=state.expenses.map(x=>({'Data':x.date,'Concepte':x.concept,'Categoria':x.category,'Import (€)':x.amount,'Pagat per':x.paidBy,'Forma de pagament':x.payment,'Moment':x.moment,'Ciutat / lloc':x.place,'Repartit entre':(x.sharedBy||[]).join(', '),'Nombre de persones':(x.sharedBy||[]).length,'Cost per persona':Number(x.amount)/Math.max(1,(x.sharedBy||[]).length),'Observacions':x.notes}));const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:12},{wch:28},{wch:23},{wch:12},{wch:18},{wch:20},{wch:20},{wch:20},{wch:35},{wch:16},{wch:17},{wch:30}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'DESPESES');const bal=balances();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(bal).map(([p,v])=>({Persona:p,Saldo:v}))),'SALDOS');XLSX.writeFile(wb,'DESPESES_ISLANDIA_2026.xlsx')}
+$('exportBtn').onclick=exportExcel;$('backupBtn').onclick=exportExcel;$('importBtn').onclick=()=>$('fileInput').click();
+$('fileInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;if(typeof XLSX==='undefined'){alert('Obre l’app amb connexió per activar Excel.');return}const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:''});const pick=(r,...n)=>{for(const k of n)if(r[k]!==undefined)return r[k];return''};const incoming=rows.filter(r=>pick(r,'Concepte','CONCEPTE')).map(r=>{let d=pick(r,'Data','DATA');if(d instanceof Date)d=d.toISOString().slice(0,10);let shared=String(pick(r,'Repartit entre')||'').split(',').map(x=>x.trim()).filter(Boolean);if(!shared.length)shared=state.participants.slice(0,Number(pick(r,'Persones','Nombre de persones')||state.participants.length));return{date:String(d||''),concept:pick(r,'Concepte','CONCEPTE'),category:pick(r,'Categoria','CATEGORIA')||'Altres',amount:Number(pick(r,'Import (€)','Import','IMPORT')||0),paidBy:pick(r,'Pagat per')||state.participants[0],payment:pick(r,'Forma de pagament','FORMA DE PAGAMENT')||'Targeta',moment:pick(r,'Moment','MOMENT')||'Durant el viatge',place:pick(r,'Ciutat / lloc','Lloc','CIUTAT / LLOC'),sharedBy:shared,notes:pick(r,'Observacions','OBSERVACIONS')}});if(incoming.length&&confirm(`S’han trobat ${incoming.length} despeses. Vols substituir les dades actuals?`)){state.expenses=incoming;save()}e.target.value=''});
+$('saveSettings').onclick=()=>{const names=$('participantNames').value.split('\n').map(x=>x.trim()).filter(Boolean);if(names.length<2){alert('Introdueix almenys dues persones.');return}state.trip=$('tripName').value.trim()||'Despeses de viatge';state.participants=names;save();alert('Configuració desada.')};
+$('clearBtn').onclick=()=>{if(confirm('Aquesta acció eliminarà totes les despeses guardades.')){state.expenses=[];save()}};
+function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('.tab').forEach(x=>x.onclick=()=>showPage(x.dataset.page));$('goSummary').onclick=()=>showPage('summaryPage');$('focusNew').onclick=()=>{showPage('expensesPage');setTimeout(()=>$('concept').focus(),200)};
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');render();
+</script>
+</body></html>
