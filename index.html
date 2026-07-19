@@ -85,11 +85,23 @@ if(headerRow<0){alert('No he trobat la capçalera de l’Excel. Comprova que hi 
 const headers=matrix[headerRow].map(v=>String(v).trim());
 const normalizedHeaders=headers.map(normalize);
 const rows=matrix.slice(headerRow+1).filter(row=>row.some(v=>String(v??'').trim()!==''));
-const value=(row,...names)=>{for(const name of names){const i=normalizedHeaders.indexOf(normalize(name));if(i>=0&&row[i]!==undefined&&row[i]!==null&&row[i]!=='')return row[i]}return''};
-const parseAmount=v=>{if(typeof v==='number')return v;const cleaned=String(v??'').replace(/\s/g,'').replace(/€/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.').replace(/[^0-9.-]/g,'');return Number(cleaned)||0};
+const findCol=(...names)=>{for(const name of names){const n=normalize(name);let i=normalizedHeaders.indexOf(n);if(i>=0)return i;i=normalizedHeaders.findIndex(h=>h.includes(n));if(i>=0)return i}return -1};
+const conceptCol=findCol('Concepte');
+let amountCol=normalizedHeaders.findIndex(h=>h==='import (€)'||h==='import' || (h.startsWith('import')&&!h.includes('persona')));
+if(amountCol<0) amountCol=3; // columna D del nostre Excel
+const value=(row,...names)=>{for(const name of names){const i=findCol(name);if(i>=0&&row[i]!==undefined&&row[i]!==null&&row[i]!=='')return row[i]}return''};
+const parseAmount=v=>{
+  if(typeof v==='number'&&Number.isFinite(v))return v;
+  let t=String(v??'').trim().replace(/\u00a0/g,'').replace(/\s/g,'').replace(/€/g,'');
+  if(!t)return 0;
+  if(t.includes(',')&&t.includes('.')){if(t.lastIndexOf(',')>t.lastIndexOf('.'))t=t.replace(/\./g,'').replace(',','.');else t=t.replace(/,/g,'')}
+  else if(t.includes(','))t=t.replace(',','.');
+  t=t.replace(/[^0-9.-]/g,'');
+  const n=parseFloat(t);return Number.isFinite(n)?n:0
+};
 const formatDate=v=>{if(v instanceof Date&&!isNaN(v))return v.toISOString().slice(0,10);if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`};const t=String(v??'').trim();const m=t.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:t};
-const incoming=rows.filter(r=>String(value(r,'Concepte')).trim()).map(r=>{const peopleCount=Math.max(1,parseInt(value(r,'Persones','Nombre de persones'))||state.participants.length);let shared=String(value(r,'Repartit entre')||'').split(',').map(x=>x.trim()).filter(Boolean);if(!shared.length)shared=state.participants.slice(0,peopleCount);return{date:formatDate(value(r,'Data')),concept:String(value(r,'Concepte')).trim(),category:String(value(r,'Categoria')||'Altres').trim(),amount:parseAmount(value(r,'Import (€)','Import')),paidBy:String(value(r,'Pagat per')||state.participants[0]).trim(),payment:String(value(r,'Forma de pagament')||'Targeta').trim(),moment:String(value(r,'Moment')||'Durant el viatge').trim(),place:String(value(r,'Ciutat / lloc','Lloc')||'').trim(),sharedBy:shared,notes:String(value(r,'Observacions')||'').trim()}}).filter(x=>x.amount>0||x.concept);
-if(!incoming.length){alert(`He trobat el full «${selectedSheet}», però no hi ha despeses amb concepte.`)}else if(confirm(`S’han trobat ${incoming.length} despeses per un total de ${euro(incoming.reduce((s,x)=>s+x.amount,0))}. Vols substituir les dades actuals?`)){state.expenses=incoming;save();alert('Importació completada correctament.')}e.target.value=''});
+const incoming=rows.filter(r=>String(conceptCol>=0?r[conceptCol]:value(r,'Concepte')).trim()).map(r=>{const peopleCount=Math.max(1,parseInt(value(r,'Persones','Nombre de persones'))||state.participants.length);let shared=String(value(r,'Repartit entre')||'').split(',').map(x=>x.trim()).filter(Boolean);if(!shared.length)shared=state.participants.slice(0,peopleCount);const rawAmount=amountCol>=0?r[amountCol]:value(r,'Import (€)','Import');return{date:formatDate(value(r,'Data')),concept:String(conceptCol>=0?r[conceptCol]:value(r,'Concepte')).trim(),category:String(value(r,'Categoria')||'Altres').trim(),amount:parseAmount(rawAmount),paidBy:String(value(r,'Pagat per')||state.participants[0]).trim(),payment:String(value(r,'Forma de pagament')||'Targeta').trim(),moment:String(value(r,'Moment')||'Durant el viatge').trim(),place:String(value(r,'Ciutat / lloc','Lloc')||'').trim(),sharedBy:shared,notes:String(value(r,'Observacions')||'').trim()}}).filter(x=>x.concept);
+if(!incoming.length){alert(`He trobat el full «${selectedSheet}», però no hi ha despeses amb concepte.`)}else if(confirm(`S’han trobat ${incoming.length} despeses per un total de ${euro(incoming.reduce((s,x)=>s+x.amount,0))}. Vols substituir les dades actuals?`)){state.expenses=incoming;save();alert('Importació completada: imports totals carregats correctament.')}e.target.value=''});
 $('saveSettings').onclick=()=>{const names=$('participantNames').value.split('\n').map(x=>x.trim()).filter(Boolean);if(names.length<2){alert('Introdueix almenys dues persones.');return}state.trip=$('tripName').value.trim()||'Despeses de viatge';state.participants=names;save();alert('Configuració desada.')};
 $('clearBtn').onclick=()=>{if(confirm('Aquesta acció eliminarà totes les despeses guardades.')){state.expenses=[];save()}};
 function showPage(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===id));window.scrollTo({top:0,behavior:'smooth'})}

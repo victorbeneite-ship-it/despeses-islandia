@@ -1,4 +1,4 @@
-const CACHE='despeses-islandia-v4-import';
+const CACHE='despeses-islandia-v5-imports';
 const CORE=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>Promise.allSettled(CORE.map(x=>c.add(x)))))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))]))});
