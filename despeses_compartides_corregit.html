@@ -23,10 +23,6 @@ label{display:block;font-size:12px;font-weight:750;color:#526963;margin-bottom:4
 .participants{display:grid;grid-template-columns:1fr 1fr;gap:8px}.check{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:11px;padding:9px}.check input{width:auto}
 .expense{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px 0;border-bottom:1px solid #edf2f0}.amount{text-align:right;font-weight:800}.pill{display:inline-block;background:#edf4f1;border-radius:999px;padding:3px 7px;margin:4px 3px 0 0;font-size:11px}
 .balance{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #edf2f0}.positive{color:#147a55}.negative{color:#b04136}.empty{text-align:center;color:#71847f;padding:22px}.hidden{display:none}.small{font-size:12px;color:#647770}.back{border:0;background:transparent;color:var(--g);font-weight:800;padding:0 0 8px}.settlement{padding:9px 0;border-bottom:1px solid #edf2f0}
-.reportBox{white-space:pre-wrap;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45;max-height:58vh;overflow:auto;background:#f7faf8;border:1px solid var(--line);border-radius:12px;padding:13px;margin-top:12px}
-.reportActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.reportMode{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
-.reportMode button.active{background:var(--g);color:#fff}
 .chart{margin-top:12px}
 .chartRow{display:grid;grid-template-columns:minmax(90px,1.1fr) 2.2fr auto;gap:8px;align-items:center;margin:9px 0}
 .chartLabel{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -111,20 +107,6 @@ label{display:block;font-size:12px;font-weight:750;color:#526963;margin-bottom:4
 <div class="card"><b>Import pagat per persona</b><div id="payerChart" class="chart"></div></div>
 <div class="card"><b>Saldo de cada persona</b><div class="small">Positiu: ha avançat diners. Negatiu: deu diners.</div><div id="balances"></div></div>
 <div class="card"><b>Liquidació proposada</b><div id="settlements"></div></div>
-<div class="card">
-  <b>Informe del viatge</b>
-  <div class="small">Genera un resum automàtic amb totals, categories, dies, pagadors i curiositats.</div>
-  <div class="reportMode">
-    <button id="shortReportBtn" class="btn secondary active">Informe curt</button>
-    <button id="fullReportBtn" class="btn secondary">Informe complet</button>
-  </div>
-  <button id="generateReportBtn" class="btn primary" style="width:100%;margin-top:8px">Generar informe</button>
-  <div id="reportOutput" class="reportBox hidden"></div>
-  <div id="reportActions" class="reportActions hidden">
-    <button id="copyReportBtn" class="btn secondary">Copiar text</button>
-    <button id="shareReportBtn" class="btn secondary">Compartir</button>
-  </div>
-</div>
 </div>
 
 <div id="settingsPage" class="page">
@@ -244,7 +226,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 
 function renderHome(){
  $('home').classList.remove('hidden');
- if(cloudCode)$('cloudCard').classList.remove('hidden');$('tripView').classList.add('hidden');$('backBtn').classList.add('hidden');$('title').textContent='✈️ Despeses Viatges';$('subtitle').textContent='Versió informe · edició, eliminació i resum automàtic';
+ if(cloudCode)$('cloudCard').classList.remove('hidden');$('tripView').classList.add('hidden');$('backBtn').classList.add('hidden');$('title').textContent='✈️ Despeses Viatges';$('subtitle').textContent='Versió corregida · edició i eliminació sincronitzades';
  const box=$('tripList');
  if(!state.trips.length){box.innerHTML='<div class="empty">Encara no hi ha cap viatge.</div>';return}
  box.innerHTML=state.trips.map(t=>`<div class="trip"><div><div class="tripName">${esc(t.name)}</div><div class="meta">${t.participants.length} participants · ${t.expenses.length} despeses · ${money(t.expenses.reduce((a,x)=>a+Number(x.amount||0),0),t.currency)}</div></div><button class="btn secondary" onclick="openTrip('${t.id}')">Obrir</button></div>`).join('');
@@ -326,155 +308,6 @@ function renderSummary(){
  let i=0,j=0;while(i<debt.length&&j<cred.length){let a=Math.min(debt[i][1],cred[j][1]);out.push(`${debt[i][0]} → ${cred[j][0]}: ${money(a,t.currency)}`);debt[i][1]-=a;cred[j][1]-=a;if(debt[i][1]<.005)i++;if(cred[j][1]<.005)j++}
  $('settlements').innerHTML=out.length?out.map(x=>`<div class="settlement">${esc(x)}</div>`).join(''):'<div class="empty">Els comptes estan equilibrats.</div>';
 }
-
-let reportMode='short', lastReport='';
-
-function normText(v){
- return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-}
-function fmtDateLabel(s){
- if(!s)return 'sense data';
- const d=new Date(s+'T12:00:00');
- return isNaN(d)?s:new Intl.DateTimeFormat('ca-ES',{day:'numeric',month:'long',year:'numeric'}).format(d);
-}
-function reportStats(){
- const t=current(), expenses=t.expenses||[], total=expenses.reduce((s,x)=>s+(Number(x.amount)||0),0);
- const participants=t.participants||[], people=Math.max(1,participants.length);
- const byCategory={}, byPayer=Object.fromEntries(participants.map(p=>[p,0])), byDate={}, byPayment={};
- expenses.forEach(x=>{
-   const a=Number(x.amount)||0, cat=x.category||'Altres', payer=x.paidBy||'Sense indicar';
-   byCategory[cat]=(byCategory[cat]||0)+a;
-   byPayer[payer]=(byPayer[payer]||0)+a;
-   const date=x.date||'Sense data';byDate[date]=(byDate[date]||0)+a;
-   const pay=x.payment||'Sense indicar';byPayment[pay]=(byPayment[pay]||0)+a;
- });
- const sortedCat=Object.entries(byCategory).sort((a,b)=>b[1]-a[1]);
- const sortedPayer=Object.entries(byPayer).sort((a,b)=>b[1]-a[1]);
- const sortedDays=Object.entries(byDate).sort((a,b)=>b[1]-a[1]);
- const sortedExpenses=expenses.slice().sort((a,b)=>(Number(b.amount)||0)-(Number(a.amount)||0));
- const dates=expenses.map(x=>x.date).filter(Boolean).sort();
- const uniqueDates=[...new Set(dates)];
- const nights=expenses.filter(x=>normText(x.category).includes('allotjament'));
- const dinners=expenses.filter(x=>{const s=normText(`${x.concept} ${x.notes}`);return s.includes('sopar')||s.includes('cena')||s.includes('dinner')});
- const food=expenses.filter(x=>{const c=normText(x.category);return c.includes('menjar')||c.includes('restaurant')||c.includes('supermercat')});
- const parking=expenses.filter(x=>normText(x.category).includes('aparcament'));
- const fuel=expenses.filter(x=>normText(x.category).includes('combustible'));
- const cash=expenses.filter(x=>normText(x.payment).includes('efectiu'));
- return {t,expenses,total,participants,people,byCategory,byPayer,byDate,byPayment,sortedCat,sortedPayer,sortedDays,sortedExpenses,uniqueDates,nights,dinners,food,parking,fuel,cash};
-}
-function sumItems(items){return items.reduce((s,x)=>s+(Number(x.amount)||0),0)}
-function liquidationLines(){
- const t=current(), b=balances(), debt=Object.entries(b).filter(([,v])=>v<-.005).map(([p,v])=>[p,-v]), cred=Object.entries(b).filter(([,v])=>v>.005).map(([p,v])=>[p,v]), out=[];
- let i=0,j=0;
- while(i<debt.length&&j<cred.length){
-   const a=Math.min(debt[i][1],cred[j][1]);
-   out.push(`• ${debt[i][0]} hauria d’abonar a ${cred[j][0]}: *${money(a,t.currency)}*`);
-   debt[i][1]-=a;cred[j][1]-=a;
-   if(debt[i][1]<.005)i++;if(cred[j][1]<.005)j++;
- }
- return out;
-}
-function buildShortReport(){
- const s=reportStats(), days=Math.max(1,s.uniqueDates.length), topDay=s.sortedDays[0], topCat=s.sortedCat[0], topExpense=s.sortedExpenses[0];
- const lines=[
- `✈️ *RESUM DE DESPESES — ${s.t.name.toUpperCase()}*`,
- ``,
- `💰 *Cost total:* ${money(s.total,s.t.currency)}`,
- `👥 *Cost mitjà per persona:* ${money(s.total/s.people,s.t.currency)}`,
- `🧾 *Despeses registrades:* ${s.expenses.length}`,
- `📅 *Mitjana per dia amb despesa:* ${money(s.total/days,s.t.currency)}`,
- ``,
- `📊 *Principals categories:*`
- ];
- s.sortedCat.slice(0,6).forEach(([c,v])=>lines.push(`• ${c}: *${money(v,s.t.currency)}* (${s.total?((v/s.total)*100).toFixed(1).replace('.',','):0} %)`);
- if(topDay)lines.push(``,`🥇 *Dia amb més despesa:* ${fmtDateLabel(topDay[0])} — *${money(topDay[1],s.t.currency)}*`);
- if(topExpense)lines.push(`💳 *Despesa individual més gran:* ${topExpense.concept} — *${money(topExpense.amount,s.t.currency)}*`);
- lines.push(``,`👤 *Qui va avançar més diners?*`);
- s.sortedPayer.forEach(([p,v])=>lines.push(`• ${p}: *${money(v,s.t.currency)}*`));
- const liq=liquidationLines();
- if(liq.length)lines.push(``,`⚖️ *Liquidació proposada:*`,...liq);
- lines.push(``,`Informe generat amb l’app Despeses Viatges.`);
- return lines.join('\n');
-}
-function buildFullReport(){
- const s=reportStats(), days=Math.max(1,s.uniqueDates.length), foodTotal=sumItems(s.food), dinnerTotal=sumItems(s.dinners);
- const lodgingTotal=sumItems(s.nights), fuelTotal=sumItems(s.fuel), parkingTotal=sumItems(s.parking), cashTotal=sumItems(s.cash);
- const lines=[
- `✈️ *INFORME DE DESPESES — ${s.t.name.toUpperCase()}*`,
- ``,
- `S’han analitzat *${s.expenses.length} despeses* corresponents a ${s.people} participants.`,
- ``,
- `💰 *COST TOTAL DEL VIATGE*`,
- ``,
- `*${money(s.total,s.t.currency)}*`,
- ``,
- `Cost mitjà: *${money(s.total/s.people,s.t.currency)} per persona*.`,
- `Mitjana: *${money(s.total/days,s.t.currency)} per dia amb despeses registrades*.`,
- ``,
- `━━━━━━━━━━━━━━━━━━`,
- ``,
- `📊 *DISTRIBUCIÓ PER CATEGORIES*`,
- ``
- ];
- s.sortedCat.forEach(([c,v])=>lines.push(`• ${c}: *${money(v,s.t.currency)}* — ${s.total?((v/s.total)*100).toFixed(1).replace('.',','):0} %`));
- if(foodTotal){
-   lines.push(``,`━━━━━━━━━━━━━━━━━━`,``,`🍴 *ALIMENTACIÓ*`,``,`Total en restaurants, menjar i supermercats: *${money(foodTotal,s.t.currency)}*.`);
-   lines.push(`• Per persona: *${money(foodTotal/s.people,s.t.currency)}*`);
-   lines.push(`• Pes sobre el total: *${s.total?((foodTotal/s.total)*100).toFixed(1).replace('.',','):0} %*`);
- }
- if(dinnerTotal){
-   lines.push(``,`🌙 *SOPARS IDENTIFICATS*`,``,`S’han identificat ${s.dinners.length} moviments amb referències a sopar/cena/dinner, per un total de *${money(dinnerTotal,s.t.currency)}*.`);
-   lines.push(`Mitjana: *${money(dinnerTotal/Math.max(1,s.dinners.length),s.t.currency)} per moviment*.`);
- }
- lines.push(``,`━━━━━━━━━━━━━━━━━━`,``,`📅 *DIES AMB MÉS DESPESA*`,` `);
- s.sortedDays.slice(0,5).forEach(([d,v],i)=>lines.push(`${i+1}. ${fmtDateLabel(d)}: *${money(v,s.t.currency)}*`));
- lines.push(``,`💳 *DESPESES INDIVIDUALS MÉS GRANS*`,` `);
- s.sortedExpenses.slice(0,5).forEach((x,i)=>lines.push(`${i+1}. ${x.concept}: *${money(x.amount,s.t.currency)}*${x.date?` — ${fmtDateLabel(x.date)}`:''}`));
- lines.push(``,`━━━━━━━━━━━━━━━━━━`,``,`👤 *IMPORT AVANÇAT PER CADA PERSONA*`,` `);
- s.sortedPayer.forEach(([p,v])=>lines.push(`• ${p}: *${money(v,s.t.currency)}* — ${s.total?((v/s.total)*100).toFixed(1).replace('.',','):0} %`));
- const liq=liquidationLines();
- if(liq.length)lines.push(``,`⚖️ *LIQUIDACIÓ PROPOSADA*`,``,...liq);
- if(lodgingTotal||fuelTotal||parkingTotal||cashTotal){
-   lines.push(``,`━━━━━━━━━━━━━━━━━━`,``,`🔎 *DADES DESTACADES*`,` `);
-   if(lodgingTotal)lines.push(`• Allotjaments: *${money(lodgingTotal,s.t.currency)}* en ${s.nights.length} moviments.`);
-   if(fuelTotal)lines.push(`• Combustible: *${money(fuelTotal,s.t.currency)}* en ${s.fuel.length} repostatges; mitjana de *${money(fuelTotal/Math.max(1,s.fuel.length),s.t.currency)}*.`);
-   if(parkingTotal)lines.push(`• Aparcaments: *${money(parkingTotal,s.t.currency)}* en ${s.parking.length} pagaments; mitjana de *${money(parkingTotal/Math.max(1,s.parking.length),s.t.currency)}*.`);
-   if(cashTotal)lines.push(`• Pagaments en efectiu: *${money(cashTotal,s.t.currency)}*.`);
- }
- if(s.sortedCat[0])lines.push(`• La categoria principal és ${s.sortedCat[0][0]}, amb *${money(s.sortedCat[0][1],s.t.currency)}*.`);
- if(s.sortedExpenses[0])lines.push(`• La despesa individual més gran és ${s.sortedExpenses[0].concept}, amb *${money(s.sortedExpenses[0].amount,s.t.currency)}*.`);
- lines.push(``,`━━━━━━━━━━━━━━━━━━`,``,`📝 *CONCLUSIÓ*`,``,`Les principals partides del viatge han estat ${s.sortedCat.slice(0,3).map(x=>x[0]).join(', ')}. El cost mitjà per participant ha estat de *${money(s.total/s.people,s.t.currency)}*.`,``,`Informe generat automàticament amb l’app Despeses Viatges.`);
- return lines.join('\n');
-}
-function selectReportMode(mode){
- reportMode=mode;
- $('shortReportBtn').classList.toggle('active',mode==='short');
- $('fullReportBtn').classList.toggle('active',mode==='full');
-}
-$('shortReportBtn').onclick=()=>selectReportMode('short');
-$('fullReportBtn').onclick=()=>selectReportMode('full');
-$('generateReportBtn').onclick=()=>{
- if(!current()||!current().expenses.length)return alert('Encara no hi ha despeses per analitzar.');
- lastReport=reportMode==='full'?buildFullReport():buildShortReport();
- $('reportOutput').textContent=lastReport;
- $('reportOutput').classList.remove('hidden');
- $('reportActions').classList.remove('hidden');
- $('reportOutput').scrollIntoView({behavior:'smooth',block:'start'});
-};
-$('copyReportBtn').onclick=async()=>{
- if(!lastReport)return;
- try{await navigator.clipboard.writeText(lastReport);alert('Informe copiat. Ja el pots enganxar a WhatsApp.')}
- catch(e){prompt('Copia l’informe:',lastReport)}
-};
-$('shareReportBtn').onclick=async()=>{
- if(!lastReport)return;
- if(navigator.share){
-   try{await navigator.share({title:`Informe ${current().name}`,text:lastReport})}catch(e){}
- }else{
-   try{await navigator.clipboard.writeText(lastReport);alert('Informe copiat. Ja el pots compartir.')}catch(e){prompt('Copia l’informe:',lastReport)}
- }
-};
-
 $('expenseForm').onsubmit=async e=>{
  e.preventDefault();
  const t=current(), shared=[...document.querySelectorAll('#participantChecks input:checked')].map(x=>x.value);
