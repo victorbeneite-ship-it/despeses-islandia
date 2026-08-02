@@ -1,8 +1,8 @@
 {
-  "id": "/despeses-islandia/despeses_compartides_corregit.html?v=2",
+  "id": "/despeses-islandia/despeses_compartides_corregit.html?v=3",
   "name": "Despeses Viatges Compartides",
   "short_name": "Despeses",
-  "start_url": "./despeses_compartides_corregit.html?v=2",
+  "start_url": "./despeses_compartides_corregit.html?v=3",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f2f6f4",
